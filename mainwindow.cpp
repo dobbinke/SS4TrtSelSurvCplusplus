@@ -22,6 +22,11 @@
 #include "logisticlikelihood.h"
 #include "coxlikelihood.h"
 #include "janestheta.h"
+#include "interp_1d.h"
+#include "quadrature.h"
+#include "romberg.h"
+
+#include "function2BeIntegrated.h"
 
 using namespace std;
 
@@ -178,7 +183,7 @@ VecDoub getcoxlambdasbetas(double k1, double k2, double k3, double k4, double t0
 }
 
 
-// HERE IS THE LIKELIHOOD FOR LOGISTIC REGRESSION
+// HERE IS THE LIKELIHOOD FOR LINEAR REGRESSION
 
 
 VecDoub mySLR(VecDoub xs,VecDoub ys) {
@@ -210,8 +215,6 @@ VecDoub mySLR(VecDoub xs,VecDoub ys) {
 
 
 
-
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -225,6 +228,10 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+
+
+
 
 void MainWindow::onbuttonclicked()
 {
@@ -502,6 +509,49 @@ void MainWindow::onbuttonclicked()
 ////////////////////
 
 
+/////////////////////
+// START OF EXACT THETA CALCULATION
+////////////////////
+
+       targetfunction targetfunctionobject;
+       targetfunctionobject.CoxBeta = coxbeta;
+       targetfunctionobject.t0 = t0;
+       Doub totestfunction;
+       totestfunction = 0.50;
+       Doub mytargetfunresult;
+       mytargetfunresult = targetfunctionobject(totestfunction);
+       Doub myromb = 0.0;
+       // since the standard error is 1/sqrt(12) for the rescaled biomarker, we go out two away from the endpoints
+       if (coxbeta[3] > 0)  {
+          myromb = qromb(targetfunctionobject,-3,(-coxbeta[2]/coxbeta[3]));
+       }
+       else {
+          myromb = qromb(targetfunctionobject,(-coxbeta[2]/coxbeta[3]),4);
+       }
+
+        cout << "targetfunresult is : " << mytargetfunresult;
+        cout << "\n";
+        cout << "integral result is : " << myromb;
+        cout << "\n";
+        cout << "beta0 is " << coxbeta[0];
+        cout << "\n";
+        cout << "beta1 is " << coxbeta[1];
+        cout << "\n";
+        cout << "beta2 is " << coxbeta[2];
+        cout << "\n";
+        cout << "beta3 is " << coxbeta[3];
+        cout << "\n";
+
+
+
+/////////////////////
+// END OF EXACT THETA CALCULATION
+////////////////////
+
+
+
+
+
 
 //   	if (howmanyvalid < 5) {
 //   		cout << "Warning: only sample sizes " ;
@@ -527,6 +577,11 @@ void MainWindow::onbuttonclicked()
     ui->label->setNum(SampleSizeEstimate);
     ssasstring = QString::number(SampleSizeEstimate);
     ui -> label -> setText(ssasstring);
+
+    QString ssasstring2;
+    ui->label_11->setNum(myromb);
+    ssasstring2 = QString::number(myromb);
+    ui -> label_11 -> setText(ssasstring2);
 
 
 
